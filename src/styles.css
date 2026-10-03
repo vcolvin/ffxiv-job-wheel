@@ -256,12 +256,75 @@ h2 {
   overflow-y: auto;
 }
 
+/* ---------- Job list ---------- */
+
+.jobs-card summary { list-style: none; cursor: pointer; }
+.jobs-card summary::-webkit-details-marker { display: none; }
+.jobs-card summary h2 { display: flex; align-items: baseline; gap: 8px; }
+.jobs-card summary h2::after {
+  content: "";
+  margin-left: auto;
+  align-self: center;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+}
+.jobs-card[open] summary h2::after { transform: rotate(45deg); }
+.jobs-card:not([open]) summary h2 { margin-bottom: 0; border-bottom-color: transparent; padding-bottom: 0; }
+.jobs-card summary:hover h2 { color: var(--text); }
+.jobs-card .excluded { font-size: 12px; font-weight: 400; color: var(--orange); }
+
+.jobs-actions { display: flex; gap: 6px; }
+.jobs-actions .chip { flex: 1; justify-content: center; padding: 6px 8px; }
+.jobs-hint { margin: 8px 0; font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+.jobs {
+  list-style: none;
+  margin: 0;
+  padding: 0 2px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.jobs li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 8px 3px 6px;
+  border-radius: 6px;
+  border-left: 3px solid var(--role-accent);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 13px;
+  cursor: grab;
+}
+.jobs li:hover { background: rgba(255, 255, 255, 0.08); }
+.jobs li.dragging { opacity: 0.35; }
+.jobs li.filtered { opacity: 0.4; }
+.jobs li.excluded .name { color: var(--muted); text-decoration: line-through; }
+.jobs li.excluded img { filter: grayscale(1); opacity: 0.6; }
+.jobs .grip {
+  width: 6px;
+  height: 14px;
+  flex: none;
+  background-image: radial-gradient(circle, var(--muted) 1px, transparent 1.4px);
+  background-size: 3px 3.5px;
+  opacity: 0.7;
+}
+.jobs img { width: 22px; height: 22px; border-radius: 3px; }
+.jobs .name { flex: 1; }
+.jobs input { accent-color: var(--gold); width: 15px; height: 15px; margin: 0; cursor: pointer; }
+
 /* Thin brass scrollbars for the history list and, on short windows, the sidebar */
-.history, .panel { scrollbar-width: thin; scrollbar-color: var(--brass-lo) transparent; }
-.history::-webkit-scrollbar, .panel::-webkit-scrollbar { width: 8px; }
-.history::-webkit-scrollbar-track, .panel::-webkit-scrollbar-track { background: transparent; }
-.history::-webkit-scrollbar-thumb, .panel::-webkit-scrollbar-thumb { background: var(--brass-lo); border-radius: 4px; }
-.history::-webkit-scrollbar-thumb:hover, .panel::-webkit-scrollbar-thumb:hover { background: var(--brass); }
+.history, .panel, .jobs { scrollbar-width: thin; scrollbar-color: var(--brass-lo) transparent; }
+.history::-webkit-scrollbar, .panel::-webkit-scrollbar, .jobs::-webkit-scrollbar { width: 8px; }
+.history::-webkit-scrollbar-track, .panel::-webkit-scrollbar-track, .jobs::-webkit-scrollbar-track { background: transparent; }
+.history::-webkit-scrollbar-thumb, .panel::-webkit-scrollbar-thumb, .jobs::-webkit-scrollbar-thumb { background: var(--brass-lo); border-radius: 4px; }
+.history::-webkit-scrollbar-thumb:hover, .panel::-webkit-scrollbar-thumb:hover, .jobs::-webkit-scrollbar-thumb:hover { background: var(--brass); }
 .history li { display: flex; align-items: center; gap: 10px; font-size: 14px; }
 .history img { width: 26px; height: 26px; border-radius: 4px; }
 .history .empty { color: var(--muted); font-size: 13px; }

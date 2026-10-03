@@ -1,11 +1,11 @@
 # FFXIV Job Wheel
 
-A spinning wheel that picks a random FFXIV job. Filter by Tank, Healer, All DPS, or each DPS type.
+A spinning wheel that picks a random FFXIV job. Filter by Tank, Healer, All DPS, or each DPS type, rearrange the slices in any order, and leave out specific jobs.
 
 ## Run it
 
-- **Windows:** `dist/FFXIV-Job-Wheel-1.0.2-portable.exe` runs with no install. `...-setup.exe` installs it with a Start menu shortcut.
-- **macOS:** open `dist/FFXIV-Job-Wheel-1.0.2-mac.dmg` and drag the app to Applications. It is unsigned, so the first time, right-click the app and choose **Open**.
+- **Windows:** `dist/FFXIV-Job-Wheel-1.1.0-portable.exe` runs with no install. `...-setup.exe` installs it with a Start menu shortcut.
+- **macOS:** open `dist/FFXIV-Job-Wheel-1.1.0-mac.dmg` and drag the app to Applications. It is unsigned, so the first time, right-click the app and choose **Open**.
 - **Any browser:** open `src/index.html`.
 
 Windows SmartScreen may warn about an unknown publisher. Click **More info → Run anyway**.

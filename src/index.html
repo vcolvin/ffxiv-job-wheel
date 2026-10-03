@@ -84,6 +84,17 @@
         <p class="count" id="count"></p>
       </div>
 
+      <details class="card jobs-card" id="jobsCard">
+        <summary><h2>Jobs <span class="excluded" id="excludedCount"></span></h2></summary>
+        <div class="jobs-actions">
+          <button class="chip" id="shuffleOrder" title="Randomize the order of the slices">Shuffle</button>
+          <button class="chip" id="resetOrder" title="Group the slices by role again">Role order</button>
+          <button class="chip" id="includeAll" title="Put every excluded job back">Include all</button>
+        </div>
+        <p class="jobs-hint">Drag to reorder the slices (or <kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd>). Uncheck a job to leave it off the wheel.</p>
+        <ul class="jobs" id="jobList"></ul>
+      </details>
+
       <div class="card history-card">
         <div class="row">
           <h2>History</h2>

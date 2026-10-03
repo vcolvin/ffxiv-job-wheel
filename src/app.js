@@ -16,8 +16,13 @@
 
   // ---------- State ----------
 
+  const JOB_BY_ID = Object.fromEntries(JOBS.map((j) => [j.id, j]));
+
   const state = {
     roles: new Set(ROLE_ORDER),
+    order: JOBS.map((j) => j.id),   // slice order around the wheel, every job included
+    excluded: new Set(),            // jobs left off regardless of role filters
+    jobsOpen: false,
     includeLimited: true,
     sound: true,
     noRepeat: false,
@@ -48,6 +53,9 @@
       const saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
       if (!saved) return;
       if (Array.isArray(saved.roles)) state.roles = new Set(saved.roles.filter((r) => ROLES[r]));
+      if (Array.isArray(saved.order)) state.order = normalizeOrder(saved.order);
+      if (Array.isArray(saved.excluded)) state.excluded = new Set(saved.excluded.filter((id) => JOB_BY_ID[id]));
+      if (typeof saved.jobsOpen === 'boolean') state.jobsOpen = saved.jobsOpen;
       if (typeof saved.includeLimited === 'boolean') state.includeLimited = saved.includeLimited;
       else if (typeof saved.includeBlu === 'boolean') state.includeLimited = saved.includeBlu;
       if (typeof saved.sound === 'boolean') state.sound = saved.sound;
@@ -56,10 +64,20 @@
     } catch (_) { /* storage unavailable */ }
   }
 
+  // Drop unknown or duplicate ids, and add any jobs missing from a saved order at the end
+  function normalizeOrder(ids) {
+    const order = [...new Set(ids.filter((id) => JOB_BY_ID[id]))];
+    for (const job of JOBS) if (!order.includes(job.id)) order.push(job.id);
+    return order;
+  }
+
   function saveState() {
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify({
         roles: [...state.roles],
+        order: state.order,
+        excluded: [...state.excluded],
+        jobsOpen: state.jobsOpen,
         includeLimited: state.includeLimited,
         sound: state.sound,
         noRepeat: state.noRepeat,
@@ -113,17 +131,146 @@
     saveState();
   });
 
-  function jobAllowed(job) {
+  function passesFilters(job) {
     return state.roles.has(job.role) && (state.includeLimited || !job.limited);
   }
 
+  function jobAllowed(job) {
+    return passesFilters(job) && !state.excluded.has(job.id);
+  }
+
+  function buildPool() {
+    return state.order.map((id) => JOB_BY_ID[id]).filter(jobAllowed);
+  }
+
   function onFilterChange() {
-    pool = JOBS.filter(jobAllowed);
+    pool = buildPool();
     winner = -1;
     renderFilters();
+    renderJobs();
     draw();
     saveState();
   }
+
+  // ---------- Job list (order and exclusions) ----------
+
+  const jobsCard = $('jobsCard');
+  const jobList = $('jobList');
+  const jobRows = {};
+
+  jobsCard.open = state.jobsOpen;
+  jobsCard.addEventListener('toggle', () => { state.jobsOpen = jobsCard.open; saveState(); });
+
+  for (const job of JOBS) {
+    const li = document.createElement('li');
+    li.draggable = true;
+    li.dataset.id = job.id;
+    li.style.setProperty('--role-accent', ROLES[job.role].accent);
+    li.innerHTML = `<span class="grip" aria-hidden="true"></span><img src="icons/${job.id}.png" alt="" draggable="false"><span class="name"></span><input type="checkbox">`;
+    li.querySelector('.name').textContent = job.name;
+    const box = li.querySelector('input');
+    box.setAttribute('aria-label', `Include ${job.name}`);
+    box.title = 'Include on the wheel';
+    box.addEventListener('change', () => {
+      if (spinning) { box.checked = !state.excluded.has(job.id); return; }
+      box.checked ? state.excluded.delete(job.id) : state.excluded.add(job.id);
+      onFilterChange();
+    });
+    jobRows[job.id] = li;
+  }
+
+  function renderJobs() {
+    const current = [...jobList.children].map((li) => li.dataset.id);
+    if (current.join() !== state.order.join()) {
+      for (const id of state.order) jobList.appendChild(jobRows[id]);
+    }
+    for (const id of state.order) {
+      const job = JOB_BY_ID[id];
+      const li = jobRows[id];
+      const included = !state.excluded.has(id);
+      li.querySelector('input').checked = included;
+      li.classList.toggle('excluded', !included);
+      li.classList.toggle('filtered', !passesFilters(job));
+      li.title = passesFilters(job) ? '' : 'Hidden by the role filters';
+    }
+    const n = state.excluded.size;
+    $('excludedCount').textContent = n ? `${n} excluded` : '';
+  }
+
+  function setOrder(ids) {
+    if (spinning) return;
+    state.order = ids;
+    onFilterChange();
+  }
+
+  $('shuffleOrder').addEventListener('click', () => {
+    const ids = [...state.order];
+    for (let i = ids.length - 1; i > 0; i--) {
+      const j = randomInt(i + 1);
+      [ids[i], ids[j]] = [ids[j], ids[i]];
+    }
+    setOrder(ids);
+  });
+
+  $('resetOrder').addEventListener('click', () => setOrder(JOBS.map((j) => j.id)));
+
+  $('includeAll').addEventListener('click', () => {
+    if (spinning) return;
+    state.excluded.clear();
+    onFilterChange();
+  });
+
+  // Drag and drop: rows move live while dragging, and the wheel follows along
+  let dragRow = null;
+
+  jobList.addEventListener('dragstart', (e) => {
+    const li = e.target.closest && e.target.closest('li');
+    if (!li || spinning) { e.preventDefault(); return; }
+    dragRow = li;
+    li.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', li.dataset.id);
+  });
+
+  jobList.addEventListener('dragover', (e) => {
+    if (!dragRow) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const over = e.target.closest && e.target.closest('li');
+    if (!over || over === dragRow) return;
+    const box = over.getBoundingClientRect();
+    const ref = e.clientY > box.top + box.height / 2 ? over.nextSibling : over;
+    if (ref === dragRow || ref === dragRow.nextSibling) return;
+    jobList.insertBefore(dragRow, ref);
+    state.order = [...jobList.children].map((li) => li.dataset.id);
+    pool = buildPool();
+    winner = -1;
+    draw();
+  });
+
+  jobList.addEventListener('drop', (e) => { if (dragRow) e.preventDefault(); });
+
+  jobList.addEventListener('dragend', () => {
+    if (!dragRow) return;
+    dragRow.classList.remove('dragging');
+    dragRow = null;
+    saveState();
+  });
+
+  // Keyboard reordering: Alt+Up / Alt+Down moves the focused job's slice
+  jobList.addEventListener('keydown', (e) => {
+    if (!e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+    const li = e.target.closest('li');
+    if (!li) return;
+    e.preventDefault();
+    const from = state.order.indexOf(li.dataset.id);
+    const to = from + (e.key === 'ArrowUp' ? -1 : 1);
+    if (to < 0 || to >= state.order.length) return;
+    const ids = [...state.order];
+    [ids[from], ids[to]] = [ids[to], ids[from]];
+    setOrder(ids);
+    e.target.focus();
+  });
 
   function renderFilters() {
     const sameSet = (list) => list.length === state.roles.size && list.every((r) => state.roles.has(r));
@@ -134,12 +281,14 @@
       const role = btn.dataset.role;
       btn.classList.toggle('on', state.roles.has(role));
       btn.querySelector('.n').textContent =
-        JOBS.filter((j) => j.role === role && (state.includeLimited || !j.limited)).length;
+        JOBS.filter((j) => j.role === role && (state.includeLimited || !j.limited) && !state.excluded.has(j.id)).length;
     });
 
     const count = $('count');
     if (pool.length === 0) {
-      count.textContent = 'Select at least one role to spin.';
+      count.textContent = state.roles.size === 0
+        ? 'Select at least one role to spin.'
+        : 'Every job in the selected roles is excluded.';
       count.classList.add('warn');
     } else {
       count.textContent = `${pool.length} job${pool.length === 1 ? '' : 's'} on the wheel`;
@@ -617,8 +766,9 @@
   });
   new ResizeObserver(resize).observe(wrap);
 
-  pool = JOBS.filter(jobAllowed);
+  pool = buildPool();
   renderFilters();
+  renderJobs();
   renderHistory();
   resize();
   // The wheel is a canvas, so redraw once the bundled font has loaded
