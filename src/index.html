@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'">
+  <title>FFXIV Job Wheel</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>Job Wheel</h1>
+    <p class="sub">Let fate choose your next job</p>
+  </header>
+
+  <main>
+    <section class="wheel-area">
+      <div class="wheel-wrap" id="wheelWrap">
+        <div class="pointer" id="pointer" aria-hidden="true"></div>
+        <canvas id="wheel" aria-label="Job wheel"></canvas>
+        <button class="hub" id="spinBtn" title="Spin (Space)">SPIN</button>
+      </div>
+      <p class="hint">Click the hub or press <kbd>Space</kbd> to spin</p>
+    </section>
+
+    <aside class="panel">
+      <div class="card result" id="result">
+        <div class="result-empty">Spin the wheel to choose a job</div>
+      </div>
+
+      <div class="card">
+        <h2>Filter</h2>
+        <div class="quick">
+          <button class="chip" data-quick="all">All Jobs</button>
+          <button class="chip" data-quick="dps">All DPS</button>
+        </div>
+        <div class="roles" id="roleFilters"></div>
+        <label class="toggle">
+          <input type="checkbox" id="includeLimited" checked>
+          <span>Include limited jobs (Blue Mage, Beastmaster)</span>
+        </label>
+        <p class="count" id="count"></p>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <h2>History</h2>
+          <button class="link" id="clearHistory">Clear</button>
+        </div>
+        <ol class="history" id="history"></ol>
+      </div>
+
+      <div class="card options">
+        <label class="toggle">
+          <input type="checkbox" id="sound" checked>
+          <span>Sound</span>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="noRepeat">
+          <span>Don't repeat last result</span>
+        </label>
+      </div>
+    </aside>
+  </main>
+
+  <script src="jobs.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

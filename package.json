@@ -1,0 +1,51 @@
+{
+  "name": "ffxiv-job-wheel",
+  "productName": "FFXIV Job Wheel",
+  "version": "1.0.0",
+  "description": "A spinning wheel that picks a random FFXIV job, with role filters.",
+  "main": "main.js",
+  "author": "vince",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win portable nsis --x64",
+    "dist:mac": "electron-builder --mac dmg zip --universal",
+    "dist:all": "npm run dist:mac && npm run dist:win"
+  },
+  "build": {
+    "appId": "com.vince.ffxivjobwheel",
+    "productName": "FFXIV Job Wheel",
+    "files": [
+      "main.js",
+      "src/**/*",
+      "build/icon.png"
+    ],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "win": {
+      "icon": "build/icon.png",
+      "artifactName": "FFXIV-Job-Wheel-${version}-${arch}-${target}.${ext}"
+    },
+    "portable": {
+      "artifactName": "FFXIV-Job-Wheel-${version}-portable.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "FFXIV-Job-Wheel-${version}-setup.exe"
+    },
+    "mac": {
+      "icon": "build/icon.png",
+      "category": "public.app-category.games",
+      "identity": null,
+      "artifactName": "FFXIV-Job-Wheel-${version}-mac.${ext}"
+    }
+  },
+  "devDependencies": {
+    "electron": "^44.5.1",
+    "electron-builder": "^26.15.3"
+  }
+}
