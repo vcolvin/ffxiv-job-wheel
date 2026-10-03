@@ -1,4 +1,12 @@
+/* Marcellus SC (SIL Open Font License, see fonts/OFL.txt), bundled so nothing
+   needs installing. Close to the FFXIV logo lettering. */
+@font-face {
+  font-family: "XIV Display";
+  src: url("fonts/MarcellusSC-Regular.ttf") format("truetype");
+}
+
 :root {
+  --display-font: "XIV Display", "Trajan Pro", "Cinzel", Georgia, "Times New Roman", serif;
   --bg-top: #1d2d5c;
   --bg-bottom: #0c1530;
   --panel: rgba(10, 18, 42, 0.72);
@@ -8,6 +16,9 @@
   --gold: #e3b55a;
   --gold-hi: #ffe09a;
   --gold-lo: #8a6324;
+  --brass: #d6bf86;
+  --brass-hi: #fff7e2;
+  --brass-lo: #82683a;
   --orange: #f0923a;
 }
 
@@ -32,8 +43,8 @@ header {
 
 h1 {
   margin: 0;
-  font-family: "Trajan Pro", "Cinzel", Georgia, "Times New Roman", serif;
-  font-weight: 600;
+  font-family: var(--display-font);
+  font-weight: 400;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   font-size: 30px;
@@ -79,19 +90,18 @@ main {
 
 .pointer {
   position: absolute;
-  top: -6px;
+  top: calc(-2.5% - 8px);      /* boss sits on the rim, tip reaches into the segments */
   left: 50%;
-  width: 34px;
-  height: 46px;
-  margin-left: -17px;
+  height: calc(10.5% + 20px);
+  aspect-ratio: 64 / 104;
+  transform: translateX(-50%);
   z-index: 3;
-  transform-origin: 50% 20%;
-  background: linear-gradient(180deg, var(--gold-hi), var(--gold) 50%, var(--gold-lo));
-  clip-path: polygon(0 0, 100% 0, 100% 35%, 50% 100%, 0 35%);
+  transform-origin: 50% 15%;  /* swing from the boss */
   filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.6));
   transition: transform 0.08s ease-out;
 }
-.pointer.tick { transform: rotate(-14deg); transition: none; }
+.pointer svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.pointer.tick { transform: translateX(-50%) rotate(-14deg); transition: none; }
 
 .hub {
   position: absolute;
@@ -101,19 +111,23 @@ main {
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  border: 3px solid var(--gold);
-  background: radial-gradient(circle at 35% 30%, #34508f, #121d3d 70%);
-  color: var(--gold-hi);
-  font: 700 clamp(12px, 2.1vw, 20px)/1 "Trajan Pro", "Cinzel", Georgia, serif;
+  border: 3px solid var(--brass-lo);
+  /* Polished brass dome, lit from the top left like the wooden frame */
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0) 20%),
+    radial-gradient(circle at 40% 35%, var(--brass-hi), var(--brass) 35%, #b39048 62%, #6e5226 100%);
+  color: #3a2810;
+  text-shadow: 0 1px 0 rgba(255, 248, 228, 0.6);
+  font: 400 clamp(12px, 2.1vw, 20px)/1 var(--display-font);
   letter-spacing: 0.1em;
   cursor: pointer;
-  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.35), 0 0 22px rgba(227, 181, 90, 0.35), inset 0 2px 6px rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.35), 0 4px 14px rgba(0, 0, 0, 0.55), inset 0 -4px 10px rgba(60, 40, 12, 0.45);
   transition: transform 0.15s, box-shadow 0.15s;
   z-index: 2;
 }
 .hub:hover:not(:disabled) {
   transform: translate(-50%, -50%) scale(1.05);
-  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.35), 0 0 34px rgba(255, 224, 154, 0.6), inset 0 2px 6px rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.35), 0 0 30px rgba(255, 240, 200, 0.55), inset 0 -4px 10px rgba(60, 40, 12, 0.45);
 }
 .hub:disabled { cursor: default; opacity: 0.85; }
 
@@ -172,7 +186,7 @@ h2 {
   border-radius: 12px;
   box-shadow: 0 0 24px var(--glow, rgba(227, 181, 90, 0.5));
 }
-.result-job .name { font-size: 26px; font-weight: 600; line-height: 1.1; }
+.result-job .name { font-family: var(--display-font); font-size: 26px; font-weight: 400; line-height: 1.1; }
 .result-job .role { font-size: 13px; margin-top: 4px; }
 @keyframes pop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 

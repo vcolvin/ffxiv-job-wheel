@@ -29,6 +29,7 @@
   let spinning = false;
   let winner = -1;        // index into pool of the last result
   let size = 0;           // canvas CSS size in px
+  let frame = null;       // pre-rendered wooden frame (redrawn on resize)
 
   const icons = {};
   for (const job of JOBS) {
@@ -155,7 +156,148 @@
     canvas.width = Math.round(size * dpr);
     canvas.height = Math.round(size * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    frame = renderFrame(dpr);
     draw();
+  }
+
+  // Wheel geometry shared by the frame and the segments
+  function metrics() {
+    const wood = Math.round(size * 0.042 + 4);    // wooden bowl width
+    const brass = Math.max(4, Math.round(size * 0.01)); // brass track width
+    return { wood, brass, R: size / 2 - 3 - wood - brass };
+  }
+
+  // Pale brass used for the track, diamonds, pegs and hub ring
+  const BRASS = { hi: '#fff7e2', mid: '#d6bf86', lo: '#82683a' };
+
+  // Small seeded PRNG so the wood grain looks the same every time
+  function mulberry32(seed) {
+    return () => {
+      seed = (seed + 0x6d2b79f5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  // The dark wood roulette frame doesn't rotate, so it's drawn once per resize
+  function renderFrame(dpr) {
+    const off = document.createElement('canvas');
+    off.width = Math.round(size * dpr);
+    off.height = Math.round(size * dpr);
+    const g = off.getContext('2d');
+    g.scale(dpr, dpr);
+    const c = size / 2;
+    const { wood, brass, R } = metrics();
+    const Ro = size / 2 - 3;   // outer edge of the wood
+    const Ri = R + brass;      // inner edge of the wood
+    const rand = mulberry32(1337);
+
+    const annulus = (outer, inner) => {
+      g.beginPath();
+      g.arc(c, c, outer, 0, TAU);
+      g.arc(c, c, inner, 0, TAU, true);
+    };
+
+    // Base walnut, shaded so the bowl looks rounded
+    const base = g.createRadialGradient(c, c, Ri, c, c, Ro);
+    base.addColorStop(0, '#080302');
+    base.addColorStop(0.35, '#24110a');
+    base.addColorStop(0.7, '#190b05');
+    base.addColorStop(1, '#050201');
+    annulus(Ro, Ri);
+    g.fillStyle = base;
+    g.fill();
+
+    // Grain: wavy concentric strands
+    g.save();
+    annulus(Ro, Ri);
+    g.clip();
+    g.lineCap = 'round';
+    for (let k = 0; k < 170; k++) {
+      const r = Ri + rand() * (Ro - Ri);
+      const start = rand() * TAU;
+      const len = 0.4 + rand() * (TAU - 0.4);
+      const amp = 0.3 + rand() * 1.6;
+      const freq = 3 + Math.floor(rand() * 9);
+      const phase = rand() * TAU;
+      const dark = rand() < 0.65;
+      g.strokeStyle = dark
+        ? `rgba(12, 5, 2, ${0.18 + rand() * 0.35})`
+        : `rgba(120, 66, 34, ${0.05 + rand() * 0.11})`;
+      g.lineWidth = 0.4 + rand() * (dark ? 1.8 : 1.1);
+      g.beginPath();
+      for (let a = 0; a <= len; a += 0.015) {
+        const rr = r + amp * Math.sin(a * freq + phase);
+        const x = c + Math.cos(start + a) * rr;
+        const y = c + Math.sin(start + a) * rr;
+        a === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+      }
+      g.stroke();
+    }
+
+    // Lacquer: light from the top left, falling off to the bottom right
+    const sheen = g.createLinearGradient(0, 0, size, size);
+    sheen.addColorStop(0, 'rgba(255, 220, 180, 0.12)');
+    sheen.addColorStop(0.45, 'rgba(255, 225, 190, 0.02)');
+    sheen.addColorStop(1, 'rgba(0, 0, 0, 0.30)');
+    g.fillStyle = sheen;
+    g.fillRect(0, 0, size, size);
+    const spec = g.createRadialGradient(c - size * 0.3, c - size * 0.36, 0, c - size * 0.3, c - size * 0.36, size * 0.32);
+    spec.addColorStop(0, 'rgba(255, 240, 220, 0.16)');
+    spec.addColorStop(1, 'rgba(255, 240, 220, 0)');
+    g.fillStyle = spec;
+    g.fillRect(0, 0, size, size);
+    g.restore();
+
+    // Bevels on the outer lip and the groove next to the brass
+    g.lineWidth = 2;
+    g.strokeStyle = '#0c0502';
+    g.beginPath(); g.arc(c, c, Ro - 1, 0, TAU); g.stroke();
+    g.lineWidth = 1;
+    g.strokeStyle = 'rgba(255, 205, 160, 0.22)';
+    g.beginPath(); g.arc(c, c, Ro - 3, 0, TAU); g.stroke();
+    g.lineWidth = 2;
+    g.strokeStyle = 'rgba(8, 3, 1, 0.85)';
+    g.beginPath(); g.arc(c, c, Ri + 1, 0, TAU); g.stroke();
+
+    // Brass diamonds around the bowl, like a roulette ball track
+    const dr = Ri + (Ro - Ri) * 0.5;
+    const long = wood * 0.3;   // along the radius, pointing at the center
+    const wide = long * 0.5;
+    for (let i = 0; i < 8; i++) {
+      const a = -Math.PI / 2 + TAU / 16 + (i * TAU) / 8;
+      g.save();
+      g.translate(c + Math.cos(a) * dr, c + Math.sin(a) * dr);
+      g.rotate(a);
+      g.beginPath();
+      g.moveTo(long, 0); g.lineTo(0, wide); g.lineTo(-long, 0); g.lineTo(0, -wide);
+      g.closePath();
+      const dg = g.createLinearGradient(-long, -wide, long, wide);
+      dg.addColorStop(0, BRASS.hi);
+      dg.addColorStop(0.5, BRASS.mid);
+      dg.addColorStop(1, BRASS.lo);
+      g.shadowColor = 'rgba(0, 0, 0, 0.6)';
+      g.shadowBlur = 4;
+      g.shadowOffsetY = 1.5;
+      g.fillStyle = dg;
+      g.fill();
+      g.restore();
+    }
+
+    // Brass track between the wood and the segments
+    const bg = g.createLinearGradient(0, c - Ri, 0, c + Ri);
+    bg.addColorStop(0, BRASS.hi);
+    bg.addColorStop(0.5, BRASS.mid);
+    bg.addColorStop(1, BRASS.lo);
+    annulus(Ri, R - 1);
+    g.fillStyle = bg;
+    g.fill();
+    g.lineWidth = 1;
+    g.strokeStyle = 'rgba(50, 36, 14, 0.8)';
+    g.beginPath(); g.arc(c, c, Ri, 0, TAU); g.stroke();
+
+    return off;
   }
 
   function shade(hex, amt) {
@@ -168,24 +310,11 @@
     if (!size) return;
     const cx = size / 2;
     const cy = size / 2;
-    const R = size / 2 - 14;       // inner radius of the gold rim
+    const { brass, R } = metrics();  // R is the radius of the segment disc
     const n = pool.length;
 
     ctx.clearRect(0, 0, size, size);
-
-    // Outer rim
-    const rim = ctx.createLinearGradient(0, cy - R, 0, cy + R);
-    rim.addColorStop(0, '#ffe09a');
-    rim.addColorStop(0.5, '#c9953f');
-    rim.addColorStop(1, '#7a5520');
-    ctx.beginPath();
-    ctx.arc(cx, cy, R + 12, 0, TAU);
-    ctx.fillStyle = rim;
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(cx, cy, R + 2, 0, TAU);
-    ctx.fillStyle = '#0b1328';
-    ctx.fill();
+    ctx.drawImage(frame, 0, 0, size, size);
 
     if (n === 0) {
       ctx.beginPath();
@@ -225,7 +354,7 @@
       ctx.fill();
 
       // Separator
-      ctx.strokeStyle = 'rgba(227, 181, 90, 0.55)';
+      ctx.strokeStyle = 'rgba(214, 191, 134, 0.55)';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(cx, cy);
@@ -260,11 +389,11 @@
       ctx.rotate(mid);
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
-      ctx.font = `600 ${fontSize}px "Segoe UI", -apple-system, sans-serif`;
+      ctx.font = `400 ${fontSize}px "XIV Display", "Segoe UI", -apple-system, sans-serif`;
       const w = ctx.measureText(job.name).width;
       if (w > maxLen) {
         fontSize *= maxLen / w;
-        ctx.font = `600 ${fontSize}px "Segoe UI", -apple-system, sans-serif`;
+        ctx.font = `400 ${fontSize}px "XIV Display", "Segoe UI", -apple-system, sans-serif`;
       }
       ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
       ctx.shadowBlur = 4;
@@ -285,13 +414,13 @@
     // Rim pegs at each segment boundary
     for (let i = 0; i < n; i++) {
       const a = -Math.PI / 2 + rotation + i * seg;
-      const px = cx + Math.cos(a) * (R + 6);
-      const py = cy + Math.sin(a) * (R + 6);
+      const px = cx + Math.cos(a) * (R + brass / 2);
+      const py = cy + Math.sin(a) * (R + brass / 2);
       ctx.beginPath();
       ctx.arc(px, py, Math.max(2.5, size * 0.006), 0, TAU);
-      ctx.fillStyle = '#fff3cf';
+      ctx.fillStyle = BRASS.hi;
       ctx.fill();
-      ctx.strokeStyle = '#6b4a1b';
+      ctx.strokeStyle = BRASS.lo;
       ctx.lineWidth = 1;
       ctx.stroke();
     }
@@ -299,9 +428,9 @@
     // Hub ring behind the button
     ctx.beginPath();
     ctx.arc(cx, cy, R * 0.21, 0, TAU);
-    ctx.fillStyle = 'rgba(8, 14, 32, 0.85)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
     ctx.fill();
-    ctx.strokeStyle = 'rgba(227, 181, 90, 0.7)';
+    ctx.strokeStyle = 'rgba(214, 191, 134, 0.8)';
     ctx.lineWidth = 2;
     ctx.stroke();
   }
@@ -492,4 +621,6 @@
   renderFilters();
   renderHistory();
   resize();
+  // The wheel is a canvas, so redraw once the bundled font has loaded
+  document.fonts.load('20px "XIV Display"').then(draw);
 })();
