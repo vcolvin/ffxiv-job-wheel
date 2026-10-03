@@ -63,6 +63,7 @@ main {
   gap: 24px;
   padding: 12px 24px 24px;
   align-items: start;
+  min-height: 0;
 }
 
 /* ---------- Wheel ---------- */
@@ -143,6 +144,7 @@ kbd {
 /* ---------- Panel ---------- */
 
 .panel { display: flex; flex-direction: column; gap: 14px; }
+.panel > .card { flex-shrink: 0; }
 
 .card {
   background: var(--panel);
@@ -253,6 +255,13 @@ h2 {
   max-height: 210px;
   overflow-y: auto;
 }
+
+/* Thin brass scrollbars for the history list and, on short windows, the sidebar */
+.history, .panel { scrollbar-width: thin; scrollbar-color: var(--brass-lo) transparent; }
+.history::-webkit-scrollbar, .panel::-webkit-scrollbar { width: 8px; }
+.history::-webkit-scrollbar-track, .panel::-webkit-scrollbar-track { background: transparent; }
+.history::-webkit-scrollbar-thumb, .panel::-webkit-scrollbar-thumb { background: var(--brass-lo); border-radius: 4px; }
+.history::-webkit-scrollbar-thumb:hover, .panel::-webkit-scrollbar-thumb:hover { background: var(--brass); }
 .history li { display: flex; align-items: center; gap: 10px; font-size: 14px; }
 .history img { width: 26px; height: 26px; border-radius: 4px; }
 .history .empty { color: var(--muted); font-size: 13px; }
@@ -270,6 +279,16 @@ h2 {
 .link:hover { color: var(--gold-hi); }
 
 /* ---------- Narrow windows ---------- */
+
+/* Side by side: the page never scrolls. The sidebar fills the window height and
+   the history card takes what's left, scrolling on its own once it's full. */
+@media (min-width: 861px) {
+  body { height: 100vh; overflow: hidden; }
+  main { grid-template-rows: minmax(0, 1fr); }
+  .panel { align-self: stretch; min-height: 0; overflow-y: auto; }
+  .panel > .card.history-card { flex: 0 1 auto; min-height: 110px; display: flex; flex-direction: column; }
+  .history { flex: 0 1 auto; min-height: 0; max-height: none; }
+}
 
 @media (max-width: 860px) {
   main { grid-template-columns: 1fr; padding: 8px 16px 16px; }
