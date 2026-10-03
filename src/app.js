@@ -715,7 +715,7 @@
     });
   }
 
-  // ---------- Sound (generated, no audio files) ----------
+  // ---------- Sound (generated ticks, recorded win sound) ----------
 
   const audio = (() => {
     let ac = null;
@@ -742,11 +742,16 @@
       osc.stop(t + dur + 0.02);
     }
 
+    const confirm = new Audio('sounds/confirm.mp3');
+    confirm.preload = 'auto';
+    confirm.volume = 0.5;
+
     return {
       unlock() { const a = get(); if (a && a.state === 'suspended') a.resume(); },
       tick() { blip(1500, 0.035, 'square', 0.04); },
       win() {
-        [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => blip(f, 0.5, 'triangle', 0.12, i * 0.09));
+        confirm.currentTime = 0;
+        confirm.play().catch(() => { /* playback blocked or file missing */ });
       },
     };
   })();
