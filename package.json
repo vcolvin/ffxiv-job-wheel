@@ -1,7 +1,7 @@
 {
   "name": "ffxiv-job-wheel",
   "productName": "FFXIV Job Wheel",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "A spinning wheel that picks a random FFXIV job, with role filters.",
   "main": "main.js",
   "author": "vince",

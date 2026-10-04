@@ -744,7 +744,7 @@
 
     const confirm = new Audio('sounds/confirm.mp3');
     confirm.preload = 'auto';
-    confirm.volume = 0.5;
+    confirm.volume = 0.1;
 
     return {
       unlock() { const a = get(); if (a && a.state === 'suspended') a.resume(); },
